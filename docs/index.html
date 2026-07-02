@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>NiziU NOW — 最新情報まとめ</title>
+  <meta name="description" content="NiziU（JYP／Sony Music）の最新情報を、信頼度つきで自動集約。公式・ニュース・YouTube・グッズをワンタッチでチェック。" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#fff5f8" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="NiziU NOW" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="rainbow-bar" aria-hidden="true"></div>
+
+  <div class="hero">
+    <img class="hero-logo" src="img/niziu-logo.svg" alt="NiziU" />
+  </div>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-text">
+          <h1>NiziU <span>NOW</span></h1>
+          <p class="tagline">Rainbow News for WithU</p>
+        </div>
+      </div>
+      <button id="refreshBtn" class="icon-btn" title="更新" aria-label="更新">⟳</button>
+    </div>
+
+    <nav class="official-links" aria-label="公式リンク">
+      <a href="https://niziu.com/" rel="noopener">公式サイト</a>
+      <a href="https://www.youtube.com/c/NiziUOfficial" rel="noopener">YouTube</a>
+      <a href="https://www.instagram.com/niziu_info_official/" rel="noopener">Instagram</a>
+      <a href="https://x.com/NiziU__official" rel="noopener">X</a>
+    </nav>
+
+    <a class="shop-cta" href="https://jypj-store.com/collections/niziu-official-goods" rel="noopener">
+      🌈 NiziU グッズを見る（JYP JAPAN STORE）
+    </a>
+
+    <div class="filters" id="filters">
+      <button class="chip is-active" data-filter="all">すべて</button>
+      <button class="chip" data-filter="official">公式</button>
+      <button class="chip" data-filter="goods">グッズ</button>
+      <button class="chip" data-filter="youtube">YouTube</button>
+      <button class="chip" data-filter="news">ニュース</button>
+      <button class="chip" data-filter="verified">確実な情報のみ</button>
+    </div>
+  </header>
+
+  <main id="feed" class="feed" aria-live="polite">
+    <div class="state">読み込み中…</div>
+  </main>
+
+  <footer class="app-footer">
+    <img class="footer-logo" src="img/niziu-logo.svg" alt="NiziU" />
+    <p id="updatedAt"></p>
+    <p class="disclaimer">信頼度は情報源の種類などから自動判定した目安です。最終確認は公式情報をご覧ください。</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
