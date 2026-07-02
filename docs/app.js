@@ -9,8 +9,10 @@ const upcomingEl = document.getElementById('upcoming');
 const membersEl = document.getElementById('members');
 
 let allItems = [];
+let allEvents = [];
 let currentFilter = 'all';
 let currentQuery = '';
+let currentMember = null;
 
 const TYPE_LABEL = {
   youtube: '🎬 YouTube',
@@ -20,16 +22,39 @@ const TYPE_LABEL = {
 
 // ---- メンバー情報（公式PANTONEメンバーカラーの近似Web色） ----
 const MEMBERS = [
-  { name: 'MAKO',   birth: '04.04', color: '#ff6a39' },
-  { name: 'RIO',    birth: '02.04', color: '#71c5e8' },
-  { name: 'MAYA',   birth: '04.08', color: '#8f6bd6' },
-  { name: 'RIKU',   birth: '10.26', color: '#f2d21f' },
-  { name: 'AYAKA',  birth: '06.20', color: '#ffffff' },
-  { name: 'MAYUKA', birth: '11.13', color: '#5cd6b8' },
-  { name: 'RIMA',   birth: '03.26', color: '#ba0c2f' },
-  { name: 'MIIHI',  birth: '08.12', color: '#f59bbb' },
-  { name: 'NINA',   birth: '02.27', color: '#0047ab' },
+  { name: 'MAKO',   birth: '04.04', color: '#ff6a39', aliases: ['MAKO', 'マコ', '真子'] },
+  { name: 'RIO',    birth: '02.04', color: '#71c5e8', aliases: ['RIO', 'リオ', '梨緒'] },
+  { name: 'MAYA',   birth: '04.08', color: '#8f6bd6', aliases: ['MAYA', 'マヤ', '摩耶'] },
+  { name: 'RIKU',   birth: '10.26', color: '#f2d21f', aliases: ['RIKU', 'リク', '梨久'] },
+  { name: 'AYAKA',  birth: '06.20', color: '#ffffff', aliases: ['AYAKA', 'アヤカ', '彩花'] },
+  { name: 'MAYUKA', birth: '11.13', color: '#5cd6b8', aliases: ['MAYUKA', 'マユカ', '美由香'] },
+  { name: 'RIMA',   birth: '03.26', color: '#ba0c2f', aliases: ['RIMA', 'リマ', '里茉'] },
+  { name: 'MIIHI',  birth: '08.12', color: '#f59bbb', aliases: ['MIIHI', 'ミイヒ', '未光'] },
+  { name: 'NINA',   birth: '02.27', color: '#0047ab', aliases: ['NINA', 'ニナ', '仁菜'] },
 ];
+
+// メンバー名のマッチ用正規表現（「マリオ」の中の「リオ」等の誤ヒットを防ぐ）
+function memberRegexes(mb) {
+  return mb.aliases.map((a) => {
+    if (/^[A-Za-z]+$/.test(a)) {
+      return new RegExp(`(?<![A-Za-z])${a}(?![A-Za-z])`, 'i'); // 英字は単語境界
+    }
+    try {
+      return new RegExp(`(?<![ァ-ヶー])${a}(?![ァ-ヶー])`); // カタカナは前後にカタカナが無いこと
+    } catch (e) {
+      return new RegExp(a); // 古いブラウザは単純一致にフォールバック
+    }
+  });
+}
+MEMBERS.forEach((mb) => { mb.regexes = memberRegexes(mb); });
+
+function matchesMember(item) {
+  if (!currentMember) return true;
+  const mb = MEMBERS.find((m) => m.name === currentMember);
+  if (!mb) return true;
+  const hay = `${item.title || ''} ${item.summary || ''}`;
+  return mb.regexes.some((re) => re.test(hay));
+}
 
 // 記念日（毎年繰り返し）
 const ANNIVERSARIES = [
@@ -126,15 +151,71 @@ function cardHTML(item) {
 }
 
 function render() {
-  const items = allItems.filter((it) => matchesFilter(it) && matchesQuery(it));
+  const items = allItems.filter((it) => matchesFilter(it) && matchesQuery(it) && matchesMember(it));
+  renderMemberNote();
   if (!items.length) {
-    const msg = currentFilter === 'fav'
-      ? 'お気に入りはまだありません。カードの ♡ をタップすると保存されます。'
-      : '該当する情報がありません';
+    let msg = '該当する情報がありません';
+    if (currentFilter === 'fav') {
+      msg = 'お気に入りはまだありません。カードの ♡ をタップすると保存されます。';
+    } else if (currentMember) {
+      msg = `${currentMember} に関する情報は今のところありません`;
+    }
     feedEl.innerHTML = `<div class="state">${msg}</div>`;
     return;
   }
   feedEl.innerHTML = items.map(cardHTML).join('');
+}
+
+// ---- メンバー絞り込みの表示バー ----
+function renderMemberNote() {
+  const note = document.getElementById('memberNote');
+  if (!note) return;
+  if (!currentMember) { note.style.display = 'none'; note.innerHTML = ''; return; }
+  const mb = MEMBERS.find((m) => m.name === currentMember);
+  note.style.display = '';
+  note.innerHTML = `<span class="m-dot" style="background:${mb.color}"></span>
+    <span><b>${mb.name}</b> のニュースを表示中</span>
+    <button id="clearMember" type="button">解除 ×</button>`;
+  note.querySelector('#clearMember').addEventListener('click', () => setMember(null));
+}
+
+function setMember(name) {
+  currentMember = currentMember === name ? null : name;
+  document.querySelectorAll('.member').forEach((el) => {
+    el.classList.toggle('is-active', el.dataset.name === currentMember);
+  });
+  render();
+  if (currentMember) {
+    document.getElementById('memberNote')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// ---- ライブ・リリース予定（記事から自動抽出したもの） ----
+const KIND_EMOJI = { live: '🎤', release: '💿', media: '📺', event: '🎪' };
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+
+function renderSchedule() {
+  const sec = document.getElementById('schedule-sec');
+  const el = document.getElementById('schedule');
+  if (!sec || !el) return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const list = (allEvents || [])
+    .filter((ev) => new Date(ev.date + 'T00:00:00') >= today)
+    .slice(0, 8);
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  el.innerHTML = list.map((ev) => {
+    const d = new Date(ev.date + 'T00:00:00');
+    const isToday = d.getTime() === today.getTime();
+    return `<a class="sc-row" href="${escapeHtml(ev.url)}" rel="noopener">
+      <span class="sc-date">${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')}
+        <small>${WEEKDAYS[d.getDay()]}曜日</small></span>
+      <span class="sc-kind ${escapeHtml(ev.kind)}">${KIND_EMOJI[ev.kind] || '📌'} ${escapeHtml(ev.kindLabel || '')}</span>
+      <span class="sc-title">${escapeHtml(ev.title)}</span>
+      ${isToday ? '<span class="sc-today">本日</span>' : ''}
+    </a>`;
+  }).join('');
 }
 
 // ---- 誕生日・記念日カウントダウン ----
@@ -183,11 +264,16 @@ function renderUpcoming() {
 function renderMembers() {
   if (!membersEl) return;
   membersEl.innerHTML = MEMBERS.map((mb) => `
-    <div class="member">
+    <button class="member" type="button" data-name="${mb.name}"
+      title="${mb.name}のニュースを表示" aria-label="${mb.name}のニュースを表示">
       <span class="m-dot" style="background:${mb.color}"></span>
       <span class="m-name">${mb.name}</span>
       <span class="m-birth">🎂 ${mb.birth}</span>
-    </div>`).join('');
+    </button>`).join('');
+  membersEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.member');
+    if (btn) setMember(btn.dataset.name);
+  });
 }
 
 async function load() {
@@ -196,8 +282,10 @@ async function load() {
     const res = await fetch('data/feed.json?_=' + Date.now());
     const data = await res.json();
     allItems = data.items || [];
+    allEvents = data.events || [];
     // 新しい順 → 信頼度順で安定化
     allItems.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    renderSchedule();
 
     if (data.sample && !document.querySelector('.sample-note')) {
       feedEl.insertAdjacentHTML('beforebegin',

@@ -3,11 +3,29 @@
   "updatedAt": "2026-07-01T00:00:00+00:00",
   "count": 4,
   "sample": true,
+  "events": [
+    {
+      "date": "2026-07-20",
+      "kind": "live",
+      "kindLabel": "ライブ",
+      "title": "（サンプル）NiziU 全国ツアー 東京公演",
+      "url": "https://niziu.com/",
+      "source": "NiziU公式"
+    },
+    {
+      "date": "2026-07-29",
+      "kind": "release",
+      "kindLabel": "リリース",
+      "title": "（サンプル）ニューシングル配信リリース",
+      "url": "https://niziu.com/",
+      "source": "NiziU公式"
+    }
+  ],
   "items": [
     {
       "type": "youtube",
       "title": "NiziU（ニジュー） Official YouTube Channel — 最新MVをチェック",
-      "summary": "NiziU公式チャンネルの最新ミュージックビデオ・パフォーマンス映像。",
+      "summary": "NiziU公式チャンネルの最新ミュージックビデオ・パフォーマンス映像。MAKO・RIKUらメンバーの出演映像も。",
       "url": "https://www.youtube.com/c/NiziUOfficial",
       "source": "NiziU Official",
       "publishedAt": "2026-06-29T10:00:00+00:00",

@@ -118,6 +118,52 @@ body {
 }
 .m-dot-none { width: auto; height: auto; border: none; font-size: 11px; }
 
+/* ---- スケジュール（ライブ・リリース予定） ---- */
+.schedule {
+  background: var(--card); border-radius: 2px;
+  padding: 8px 16px;
+}
+.sc-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-top: 1px solid #f4ece9;
+  text-decoration: none; color: inherit;
+}
+.sc-row:first-child { border-top: none; }
+.sc-date {
+  flex: 0 0 auto; min-width: 74px;
+  font-family: var(--serif); font-size: 15px; font-weight: 700; letter-spacing: .06em;
+}
+.sc-date small { display: block; font-family: inherit; font-size: 9px; color: var(--text-dim); letter-spacing: .2em; }
+.sc-kind { flex: 0 0 auto; font-size: 10px; font-weight: 700; letter-spacing: .12em; color: var(--official); }
+.sc-kind.live { color: #b0731f; }
+.sc-kind.release { color: var(--official); }
+.sc-kind.media { color: var(--major); }
+.sc-kind.event { color: #4d9e6f; }
+.sc-title {
+  font-size: 12.5px; line-height: 1.5; color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.sc-today {
+  flex: 0 0 auto; margin-left: auto; font-size: 10px; font-weight: 800;
+  color: #fff; background: var(--official); padding: 2px 7px; border-radius: 2px;
+}
+.schedule-note {
+  margin: 8px 2px 0; font-size: 10px; color: var(--text-dim); line-height: 1.6; text-align: center;
+}
+
+/* ---- メンバー絞り込みの表示 ---- */
+.member-note {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--card); border-radius: 2px;
+  padding: 10px 14px; margin: 4px 0 8px; font-size: 12px;
+}
+.member-note .m-dot { width: 10px; height: 10px; }
+.member-note button {
+  background: transparent; border: 1px solid #d9c3bc; border-radius: 999px;
+  font-size: 11px; padding: 3px 12px; color: var(--text-sub); cursor: pointer;
+}
+.member.is-active { outline: 2px solid #111; outline-offset: -2px; }
+
 /* ---- 検索ボックス ---- */
 .search {
   display: block; width: 100%;
@@ -139,7 +185,9 @@ body {
 .member {
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 5px;
   background: var(--card); border-radius: 2px; padding: 14px 16px 12px; min-width: 92px;
+  border: none; font-family: inherit; color: inherit; cursor: pointer;
 }
+.member:active { opacity: .7; }
 .member .m-dot { width: 14px; height: 14px; }
 .m-name {
   font-family: var(--serif); font-size: 13px; font-weight: 600; letter-spacing: .14em;

@@ -1,6 +1,6 @@
 // NiziU NOW — Service Worker
 // オンライン時は常に最新を取りに行き、オフライン時だけキャッシュを使う方針。
-const CACHE = 'niziu-now-v4';
+const CACHE = 'niziu-now-v5';
 const SHELL = [
   './',
   './index.html',
