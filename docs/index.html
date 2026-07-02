@@ -46,7 +46,12 @@
       Official Goods — JYP JAPAN STORE
     </a>
 
+    <div class="upcoming" id="upcoming" aria-label="誕生日・記念日カウントダウン"></div>
+
     <h2 class="section-title">NEWS</h2>
+
+    <input id="searchBox" class="search" type="search"
+           placeholder="キーワードで検索（曲名・メンバー名など）" aria-label="キーワード検索" />
 
     <div class="filters" id="filters">
       <button class="chip is-active" data-filter="all">すべて</button>
@@ -55,12 +60,18 @@
       <button class="chip" data-filter="youtube">YouTube</button>
       <button class="chip" data-filter="news">ニュース</button>
       <button class="chip" data-filter="verified">確実な情報のみ</button>
+      <button class="chip" data-filter="fav">♡ お気に入り</button>
     </div>
   </section>
 
   <main id="feed" class="feed" aria-live="polite">
     <div class="state">読み込み中…</div>
   </main>
+
+  <section class="members-sec">
+    <h2 class="section-title">MEMBER</h2>
+    <div class="members" id="members" aria-label="メンバー一覧"></div>
+  </section>
 
   <footer class="app-footer">
     <img class="footer-logo" src="img/niziu-logo.svg" alt="NiziU" />

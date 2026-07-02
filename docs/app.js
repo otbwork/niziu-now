@@ -4,15 +4,46 @@ const feedEl = document.getElementById('feed');
 const updatedEl = document.getElementById('updatedAt');
 const filtersEl = document.getElementById('filters');
 const refreshBtn = document.getElementById('refreshBtn');
+const searchEl = document.getElementById('searchBox');
+const upcomingEl = document.getElementById('upcoming');
+const membersEl = document.getElementById('members');
 
 let allItems = [];
 let currentFilter = 'all';
+let currentQuery = '';
 
 const TYPE_LABEL = {
   youtube: '🎬 YouTube',
   news: '📰 ニュース',
   goods: '🛍 グッズ',
 };
+
+// ---- メンバー情報（公式PANTONEメンバーカラーの近似Web色） ----
+const MEMBERS = [
+  { name: 'MAKO',   birth: '04.04', color: '#ff6a39' },
+  { name: 'RIO',    birth: '02.04', color: '#71c5e8' },
+  { name: 'MAYA',   birth: '04.08', color: '#8f6bd6' },
+  { name: 'RIKU',   birth: '10.26', color: '#f2d21f' },
+  { name: 'AYAKA',  birth: '06.20', color: '#ffffff' },
+  { name: 'MAYUKA', birth: '11.13', color: '#5cd6b8' },
+  { name: 'RIMA',   birth: '03.26', color: '#ba0c2f' },
+  { name: 'MIIHI',  birth: '08.12', color: '#f59bbb' },
+  { name: 'NINA',   birth: '02.27', color: '#0047ab' },
+];
+
+// 記念日（毎年繰り返し）
+const ANNIVERSARIES = [
+  { label: 'DEBUT ANNIVERSARY', note: 'Step and a Step (2020)', date: '12.02', emoji: '💿' },
+  { label: 'Make you happy ANNIVERSARY', note: 'プレデビュー (2020)', date: '06.30', emoji: '🌈' },
+];
+
+// ---- お気に入り（端末に保存） ----
+const FAV_KEY = 'niziu-now-favs';
+let favs = new Set();
+try { favs = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); } catch (e) {}
+function saveFavs() {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify([...favs])); } catch (e) {}
+}
 
 function timeAgo(iso) {
   const then = new Date(iso).getTime();
@@ -23,6 +54,11 @@ function timeAgo(iso) {
   if (diff < 86400) return `${Math.floor(diff / 3600)}時間前`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)}日前`;
   return new Date(iso).toLocaleDateString('ja-JP');
+}
+
+function isNew(iso) {
+  const then = new Date(iso).getTime();
+  return !isNaN(then) && Date.now() - then < 24 * 3600 * 1000;
 }
 
 function escapeHtml(s) {
@@ -40,43 +76,118 @@ function matchesFilter(item) {
     case 'youtube': return item.type === 'youtube';
     case 'news': return item.type === 'news';
     case 'verified': return tier === 'official' || tier === 'major';
+    case 'fav': return favs.has(item.id);
     default: return true;
   }
+}
+
+function matchesQuery(item) {
+  if (!currentQuery) return true;
+  const hay = `${item.title || ''} ${item.summary || ''} ${item.source || ''}`.toLowerCase();
+  return currentQuery.toLowerCase().split(/\s+/).every((w) => !w || hay.includes(w));
 }
 
 function cardHTML(item) {
   const c = item.credibility || { tier: 'known', tierLabel: 'メディア', score: 50, warning: null };
   const tier = c.tier || 'known';
   const typeLabel = TYPE_LABEL[item.type] || '🔗 情報';
+  const newBadge = isNew(item.publishedAt) ? '<span class="new-badge">NEW</span>' : '';
   const warn = c.warning
     ? `<div class="warn">⚠️ <span>${escapeHtml(c.warning)}</span></div>` : '';
   const summary = item.summary
     ? `<p class="summary">${escapeHtml(item.summary)}</p>` : '';
+  const thumb = item.thumbnail
+    ? `<img class="thumb" src="${escapeHtml(item.thumbnail)}" alt="" loading="lazy" onerror="this.remove()" />` : '';
+  const favOn = favs.has(item.id);
 
   return `
     <a class="card tier-${tier}" href="${escapeHtml(item.url)}" rel="noopener">
       <div class="card-top">
         <span class="badge ${tier}">${escapeHtml(c.tierLabel || tier)}</span>
         <span class="type-tag">${typeLabel}</span>
+        ${newBadge}
       </div>
       <h2>${escapeHtml(item.title)}</h2>
+      ${thumb}
       ${summary}
       ${warn}
       <div class="cred-bar"><div class="cred-fill" style="width:${Math.max(6, c.score || 0)}%"></div></div>
       <div class="card-meta">
         <span class="source">${escapeHtml(item.source || '')} ・ ${timeAgo(item.publishedAt)}</span>
-        <span class="go">開く →</span>
+        <span class="card-actions">
+          <button class="mini-btn fav-btn ${favOn ? 'is-on' : ''}" data-act="fav" data-id="${escapeHtml(item.id)}"
+            title="お気に入り" aria-label="お気に入り" aria-pressed="${favOn}">${favOn ? '♥' : '♡'}</button>
+          <button class="mini-btn" data-act="share" data-id="${escapeHtml(item.id)}"
+            title="共有" aria-label="共有">↗</button>
+          <span class="go">開く →</span>
+        </span>
       </div>
     </a>`;
 }
 
 function render() {
-  const items = allItems.filter(matchesFilter);
+  const items = allItems.filter((it) => matchesFilter(it) && matchesQuery(it));
   if (!items.length) {
-    feedEl.innerHTML = '<div class="state">該当する情報がありません</div>';
+    const msg = currentFilter === 'fav'
+      ? 'お気に入りはまだありません。カードの ♡ をタップすると保存されます。'
+      : '該当する情報がありません';
+    feedEl.innerHTML = `<div class="state">${msg}</div>`;
     return;
   }
   feedEl.innerHTML = items.map(cardHTML).join('');
+}
+
+// ---- 誕生日・記念日カウントダウン ----
+function nextOccurrence(mmdd) {
+  const [m, d] = mmdd.split('.').map(Number);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let target = new Date(now.getFullYear(), m - 1, d);
+  if (target < today) target = new Date(now.getFullYear() + 1, m - 1, d);
+  return Math.round((target - today) / 86400000);
+}
+
+function renderUpcoming() {
+  if (!upcomingEl) return;
+  const events = [
+    ...MEMBERS.map((mb) => ({
+      emoji: '🎂', color: mb.color,
+      title: `${mb.name} BIRTHDAY`, date: mb.birth,
+      days: nextOccurrence(mb.birth),
+    })),
+    ...ANNIVERSARIES.map((a) => ({
+      emoji: a.emoji, color: null,
+      title: a.label, note: a.note, date: a.date,
+      days: nextOccurrence(a.date),
+    })),
+  ].sort((x, y) => x.days - y.days).slice(0, 3);
+
+  const rows = events.map((ev) => {
+    const dot = ev.color
+      ? `<span class="m-dot" style="background:${ev.color}"></span>` : `<span class="m-dot m-dot-none">${ev.emoji}</span>`;
+    const when = ev.days === 0
+      ? '<b class="today">本日 🎉</b>'
+      : `<b>あと${ev.days}日</b>`;
+    return `<div class="up-row">
+      ${dot}
+      <span class="up-title">${ev.emoji === '🎂' ? '🎂 ' : ''}${escapeHtml(ev.title)}</span>
+      <span class="up-date">${escapeHtml(ev.date)}</span>
+      <span class="up-days">${when}</span>
+    </div>`;
+  }).join('');
+
+  upcomingEl.innerHTML = `<p class="up-label">Upcoming</p>${rows}`;
+}
+
+// ---- メンバー一覧 ----
+function renderMembers() {
+  if (!membersEl) return;
+  membersEl.innerHTML = MEMBERS.map((mb) => `
+    <div class="member">
+      <span class="m-dot" style="background:${mb.color}"></span>
+      <span class="m-name">${mb.name}</span>
+      <span class="m-birth">🎂 ${mb.birth}</span>
+    </div>`).join('');
 }
 
 async function load() {
@@ -88,10 +199,10 @@ async function load() {
     // 新しい順 → 信頼度順で安定化
     allItems.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
 
-    const note = data.sample
-      ? '<div class="sample-note">※ サンプル表示中です。GitHub Actions が初回実行されると実データに切り替わります。</div>'
-      : '';
-    feedEl.insertAdjacentHTML('beforebegin', note);
+    if (data.sample && !document.querySelector('.sample-note')) {
+      feedEl.insertAdjacentHTML('beforebegin',
+        '<div class="sample-note">※ サンプル表示中です。GitHub Actions が初回実行されると実データに切り替わります。</div>');
+    }
 
     if (data.updatedAt) {
       updatedEl.textContent = '最終更新: ' + new Date(data.updatedAt).toLocaleString('ja-JP');
@@ -111,8 +222,44 @@ filtersEl.addEventListener('click', (e) => {
   render();
 });
 
+// カード内の ♡ / 共有ボタン（リンク遷移を止めて処理）
+feedEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.mini-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const id = btn.dataset.id;
+  const item = allItems.find((it) => it.id === id);
+  if (!item) return;
+
+  if (btn.dataset.act === 'fav') {
+    if (favs.has(id)) favs.delete(id); else favs.add(id);
+    saveFavs();
+    render();
+  } else if (btn.dataset.act === 'share') {
+    const payload = { title: item.title, text: `${item.title} | NiziU NOW`, url: item.url };
+    if (navigator.share) {
+      navigator.share(payload).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(item.url).then(() => {
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = '↗'; }, 1200);
+      }).catch(() => {});
+    }
+  }
+});
+
+if (searchEl) {
+  searchEl.addEventListener('input', () => {
+    currentQuery = searchEl.value.trim();
+    render();
+  });
+}
+
 refreshBtn.addEventListener('click', load);
 
+renderUpcoming();
+renderMembers();
 load();
 
 if ('serviceWorker' in navigator) {

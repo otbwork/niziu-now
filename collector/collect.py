@@ -279,6 +279,12 @@ def resolve_channel_id(handle: str) -> str | None:
         return None
 
 
+def youtube_thumbnail(url: str) -> str | None:
+    """動画URLからサムネイル画像URLを組み立てる（カード表示用）。"""
+    m = re.search(r"[?&]v=([\w-]{6,})", url)
+    return f"https://i.ytimg.com/vi/{m.group(1)}/hqdefault.jpg" if m else None
+
+
 def fetch_youtube() -> list:
     items = []
     for handle in YOUTUBE_HANDLES:
@@ -294,16 +300,20 @@ def fetch_youtube() -> list:
             continue
         # 指定チャンネルはすべて公式扱い
         for e in entries:
+            link = e.get("link", "")
             items.append({
                 "type": "youtube",
                 "title": clean_text(e.get("title", "")),
                 "summary": clean_text(e.get("summary", ""))[:200],
-                "url": e.get("link", ""),
+                "url": link,
+                "thumbnail": youtube_thumbnail(link),
                 "source": clean_text(e.get("source", "")) or "YouTube",
                 "publishedAt": parse_date(e.get("published", "")),
                 "tier": "official",
                 "_kind": "youtube_official",
             })
+            if not items[-1]["thumbnail"]:
+                items[-1].pop("thumbnail")
     return items
 
 
