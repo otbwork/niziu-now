@@ -1,27 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="NiziU">
-  <defs>
-    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%"  stop-color="#ff5e6c"/>
-      <stop offset="17%" stop-color="#ff9a3d"/>
-      <stop offset="34%" stop-color="#ffd23f"/>
-      <stop offset="50%" stop-color="#3ecf8e"/>
-      <stop offset="67%" stop-color="#4aa8ff"/>
-      <stop offset="84%" stop-color="#8a7bff"/>
-      <stop offset="100%" stop-color="#ff6ec7"/>
-    </linearGradient>
-  </defs>
-
-  <!-- ループ状のリボンマーク（N モチーフ） -->
-  <g transform="translate(320,130)" fill="none" stroke="url(#rainbow)"
-     stroke-width="15" stroke-linecap="round">
-    <path transform="rotate(45)"
-          d="M -100,0 C -100,-42 -42,-42 0,0 C 42,42 100,42 100,0 C 100,-42 42,-42 0,0 C -42,42 -100,42 -100,0 Z"/>
-    <path transform="rotate(-45)"
-          d="M -100,0 C -100,-42 -42,-42 0,0 C 42,42 100,42 100,0 C 100,-42 42,-42 0,0 C -42,42 -100,42 -100,0 Z"/>
-  </g>
-
-  <!-- ワードマーク -->
-  <text x="320" y="360" text-anchor="middle"
-        font-family="Didot, 'Bodoni MT', 'Playfair Display', 'Times New Roman', serif"
-        font-size="118" font-weight="600" letter-spacing="26" fill="#1f2430">NIZIU</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 150" role="img" aria-label="NiziU">
+  <!-- 文字のみのワードマーク（公式サイトの黒セリフ体トーン） -->
+  <text x="333" y="112" text-anchor="middle"
+        font-family="Didot, 'Bodoni MT', 'Playfair Display', 'Times New Roman', 'Liberation Serif', serif"
+        font-size="104" font-weight="600" letter-spacing="26" fill="#111111">NIZIU</text>
 </svg>
