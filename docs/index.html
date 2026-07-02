@@ -17,13 +17,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="rainbow-bar" aria-hidden="true"></div>
-
-  <div class="hero">
-    <img class="hero-logo" src="img/niziu-logo.svg" alt="NiziU" />
-    <p class="hero-sub">Official News &amp; Updates</p>
-  </div>
-
   <header class="app-header">
     <div class="header-inner">
       <div class="brand">
@@ -41,10 +34,19 @@
       <a href="https://www.instagram.com/niziu_info_official/" rel="noopener">Instagram</a>
       <a href="https://x.com/NiziU__official" rel="noopener">X</a>
     </nav>
+  </header>
 
+  <div class="hero">
+    <img class="hero-logo" src="img/niziu-logo.svg" alt="NiziU" />
+    <p class="hero-sub">Official News &amp; Updates</p>
+  </div>
+
+  <section class="controls">
     <a class="shop-cta" href="https://jypj-store.com/collections/niziu-official-goods" rel="noopener">
       Official Goods — JYP JAPAN STORE
     </a>
+
+    <h2 class="section-title">NEWS</h2>
 
     <div class="filters" id="filters">
       <button class="chip is-active" data-filter="all">すべて</button>
@@ -54,7 +56,7 @@
       <button class="chip" data-filter="news">ニュース</button>
       <button class="chip" data-filter="verified">確実な情報のみ</button>
     </div>
-  </header>
+  </section>
 
   <main id="feed" class="feed" aria-live="polite">
     <div class="state">読み込み中…</div>
