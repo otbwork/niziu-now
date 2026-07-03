@@ -390,8 +390,32 @@ EVENT_KINDS = [
     ("event",   "イベント", ("イベント", "発表会", "特典会", "リリイベ", "サイン会", "お渡し会")),
 ]
 
-# 「7月22日」「2026年7月22日」を拾う（「22日間」「3日連続」のような期間表現は除外）
-DATE_RE = re.compile(r"(?:(20\d{2})年)?(\d{1,2})月(\d{1,2})日(?!間|連続)")
+# 「7月22日」「2026年7月22日」に加え「7/22」「2026/7/22」形式も拾う
+# （「22日間」「3日連続」のような期間表現、URLや分数っぽい並びは除外）
+DATE_PATTERNS = [
+    re.compile(r"(?:(20\d{2})年)?(\d{1,2})月(\d{1,2})日(?!間|連続)"),
+    re.compile(r"(?<![\d/])(?:(20\d{2})/)?(\d{1,2})/(\d{1,2})(?![\d/])"),
+]
+
+
+def parse_event_date(text: str, today):
+    """テキストから最初に見つかった妥当な日付を返す（見つからなければ None）。"""
+    for pat in DATE_PATTERNS:
+        for m in pat.finditer(text):
+            y, mo, d = m.groups()
+            try:
+                if y:
+                    date = dt.date(int(y), int(mo), int(d))
+                else:
+                    date = dt.date(today.year, int(mo), int(d))
+                    # 年の記載がなく大きく過去なら来年の予定とみなす
+                    if (today - date).days > 45:
+                        date = dt.date(today.year + 1, int(mo), int(d))
+            except ValueError:
+                continue
+            if today - dt.timedelta(days=1) <= date <= today + dt.timedelta(days=400):
+                return date
+    return None
 
 
 def detect_event_kind(text: str):
@@ -408,40 +432,29 @@ def extract_events(items: list) -> list:
     events = {}
     for it in items:
         tier = it.get("credibility", {}).get("tier")
-        if tier not in ("official", "major"):
+        if tier not in ("official", "major", "known"):
             continue  # 未確認ソースの日付は載せない（精度優先）
         text = f"{it.get('title', '')} {it.get('summary', '')}"
         kind, label = detect_event_kind(text)
         if not kind:
             continue
-        for m in DATE_RE.finditer(text):
-            y, mo, d = m.groups()
-            try:
-                if y:
-                    date = dt.date(int(y), int(mo), int(d))
-                else:
-                    date = dt.date(today.year, int(mo), int(d))
-                    # 年の記載がなく大きく過去なら来年の予定とみなす
-                    if (today - date).days > 45:
-                        date = dt.date(today.year + 1, int(mo), int(d))
-            except ValueError:
-                continue
-            if date < today - dt.timedelta(days=1) or date > today + dt.timedelta(days=400):
-                continue
-            ev = {
-                "date": date.isoformat(),
-                "kind": kind,
-                "kindLabel": label,
-                "title": it["title"][:90],
-                "url": it["url"],
-                "source": it.get("source", ""),
-                "_score": it["credibility"]["score"],
-            }
-            key = (ev["date"], kind)
-            # 同じ日・同種のイベントは信頼度の高い記事を代表にする
-            if key not in events or ev["_score"] > events[key]["_score"]:
-                events[key] = ev
-            break  # 1記事につき最初の日付のみ（期間表現などの誤抽出を抑える）
+        # 1記事につき最初の日付のみ（期間表現などの誤抽出を抑える）
+        date = parse_event_date(text, today)
+        if not date:
+            continue
+        ev = {
+            "date": date.isoformat(),
+            "kind": kind,
+            "kindLabel": label,
+            "title": it["title"][:90],
+            "url": it["url"],
+            "source": it.get("source", ""),
+            "_score": it["credibility"]["score"],
+        }
+        key = (ev["date"], kind)
+        # 同じ日・同種のイベントは信頼度の高い記事を代表にする
+        if key not in events or ev["_score"] > events[key]["_score"]:
+            events[key] = ev
     out = sorted(events.values(), key=lambda e: e["date"])[:12]
     for e in out:
         e.pop("_score", None)
@@ -496,11 +509,14 @@ def build():
         print("collected 0 items; keeping existing feed.json")
         return
 
+    events = extract_events(items)
+    print(f"extracted {len(events)} schedule events")
+
     payload = {
         "artist": ARTIST,
         "updatedAt": dt.datetime.now(dt.timezone.utc).isoformat(),
         "count": len(items),
-        "events": extract_events(items),
+        "events": events,
         "items": items,
     }
 
