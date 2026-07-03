@@ -75,6 +75,37 @@ KNOWN_DOMAINS = {
 # 噂・まとめ・低信頼として減点したいドメインの手がかり（部分一致）
 LOW_TRUST_HINTS = ("matome", "2ch", "5ch", "blog.", "ameblo", "fc2", "seesaa", "livedoor.blog")
 
+# Google ニュースの記事リンクは news.google.com の中継URLで元記事ドメインが取れないため、
+# 媒体名（source）から信頼度を判定するためのヒント（小文字部分一致）
+OFFICIAL_SOURCE_HINTS = ("niziu", "jyp", "sony music", "ソニーミュージック", "ソニー・ミュージック")
+MAJOR_SOURCE_HINTS = (
+    "oricon", "オリコン", "billboard", "ビルボード", "natalie", "ナタリー",
+    "日刊スポーツ", "nikkan", "スポニチ", "sponichi", "サンスポ", "sanspo",
+    "スポーツ報知", "デイリースポーツ", "nhk", "朝日新聞", "毎日新聞", "読売新聞",
+    "産経", "日テレ", "tbs", "フジテレビ", "テレビ朝日", "モデルプレス", "modelpress",
+    "musicman", "音楽と人",
+)
+KNOWN_SOURCE_HINTS = (
+    "リアルサウンド", "real sound", "barks", "spice", "kstyle", "wowkorea",
+    "クランクイン", "the first times", "thefirsttimes", "tvガイド", "ザテレビジョン",
+    "マイナビ", "encount", "めざまし", "エキサイト", "excite", "ぴあ", "cdジャーナル",
+    "テレ朝news", "耳マン", "うたまっぷ", "m-on", "エムオン",
+)
+
+
+def classify_source_name(source: str) -> str | None:
+    """媒体名から信頼度を推定する（URLで判定できないときのフォールバック）。"""
+    sl = (source or "").lower()
+    if not sl:
+        return None
+    if any(h in sl for h in OFFICIAL_SOURCE_HINTS):
+        return "official"
+    if any(h in sl for h in MAJOR_SOURCE_HINTS):
+        return "major"
+    if any(h in sl for h in KNOWN_SOURCE_HINTS):
+        return "known"
+    return None
+
 TIER_RANK = {"official": 3, "major": 2, "known": 1, "unknown": 0}
 TIER_LABEL_JA = {
     "official": "公式",
@@ -484,7 +515,11 @@ def build():
         if kind in ("youtube_official", "goods"):
             it["tier"] = "official"
         else:
-            it["tier"] = classify_tier(it["url"], kind)
+            tier = classify_tier(it["url"], kind)
+            # Google ニュース中継URLなどでドメイン判定できないときは媒体名で判定
+            if tier == "unknown" and domain_of(it["url"]).endswith("news.google.com"):
+                tier = classify_source_name(it.get("source")) or "unknown"
+            it["tier"] = tier
 
     cross_reference(items)
 
@@ -508,6 +543,12 @@ def build():
     if not items and OUT_PATH.exists():
         print("collected 0 items; keeping existing feed.json")
         return
+
+    tier_counts = {}
+    for it in items:
+        t = it["credibility"]["tier"]
+        tier_counts[t] = tier_counts.get(t, 0) + 1
+    print("tier distribution:", tier_counts)
 
     events = extract_events(items)
     print(f"extracted {len(events)} schedule events")
