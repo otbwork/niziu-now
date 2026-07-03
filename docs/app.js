@@ -20,6 +20,15 @@ const TYPE_LABEL = {
   goods: '🛍 グッズ',
 };
 
+// ---- スプラッシュ（起動時にロゴを全画面表示 → フェードアウト） ----
+const splashEl = document.getElementById('splash');
+if (splashEl) {
+  setTimeout(() => {
+    splashEl.classList.add('is-hidden');
+    setTimeout(() => splashEl.remove(), 800);
+  }, 1600);
+}
+
 // ---- メンバー情報（公式PANTONEメンバーカラーの近似Web色） ----
 const MEMBERS = [
   { name: 'MAKO',   birth: '04.04', color: '#ff6a39', aliases: ['MAKO', 'マコ', '真子'] },
