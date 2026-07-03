@@ -18,6 +18,32 @@
 
 html, body { margin: 0; padding: 0; }
 
+/* ---- 起動スプラッシュ（トップ画像を画面いっぱいに出してフェードアウト） ---- */
+.splash {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  animation: splashOut 2.4s ease forwards;
+}
+.splash-logo {
+  width: 74%; max-width: 460px; height: auto; display: block;
+  animation: splashLogo 2.4s ease forwards;
+}
+@keyframes splashOut {
+  0%, 62% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@keyframes splashLogo {
+  0% { opacity: 0; transform: scale(.92); }
+  22% { opacity: 1; transform: scale(1); }
+  62% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash { animation: splashOut 1s ease .6s forwards; }
+  .splash-logo { animation: none; }
+}
+
 body {
   font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
   color: var(--text);

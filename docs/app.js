@@ -346,6 +346,16 @@ if (searchEl) {
 
 refreshBtn.addEventListener('click', load);
 
+// ---- 起動スプラッシュ（トップ画像を画面いっぱいに出してからフェードアウト） ----
+function initSplash() {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  const remove = () => splash.remove();
+  splash.addEventListener('animationend', remove, { once: true });
+  setTimeout(remove, 2600);
+}
+
+initSplash();
 renderUpcoming();
 renderMembers();
 load();
