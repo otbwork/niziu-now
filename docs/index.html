@@ -15,12 +15,34 @@
   <meta name="apple-mobile-web-app-title" content="NiziU NOW" />
 
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- 起動スプラッシュの基本スタイルは index.html に直接埋め込み、
+       styles.css がキャッシュで古くても必ず「全画面表示→自動消去」が効くようにする -->
+  <style>
+    #splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;
+      background:#e9d3cc;animation:splashOut 2.4s ease forwards;}
+    #splash img{width:74%;max-width:460px;height:auto;display:block;animation:splashLogo 2.4s ease forwards;}
+    @keyframes splashOut{0%,62%{opacity:1}100%{opacity:0;visibility:hidden}}
+    @keyframes splashLogo{0%{opacity:0;transform:scale(.92)}22%{opacity:1;transform:scale(1)}
+      62%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.06)}}
+    @media(prefers-reduced-motion:reduce){#splash{animation:splashOut 1s ease .6s forwards}#splash img{animation:none}}
+  </style>
 </head>
 <body>
   <!-- 起動スプラッシュ（トップ画像を画面いっぱいに表示してからフェードアウト） -->
   <div id="splash" class="splash" aria-hidden="true">
     <img class="splash-logo" src="img/niziu-logo.svg" alt="NiziU" />
   </div>
+  <script>
+    /* app.js のキャッシュ状態に関係なく、スプラッシュを確実に取り除く */
+    (function () {
+      var s = document.getElementById('splash');
+      if (!s) return;
+      var go = function () { if (s && s.parentNode) s.parentNode.removeChild(s); };
+      s.addEventListener('animationend', go, { once: true });
+      setTimeout(go, 2600);
+    })();
+  </script>
 
   <header class="app-header">
     <div class="header-inner">
